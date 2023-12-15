@@ -24,6 +24,7 @@ from tornado.escape import json_decode, json_encode, url_escape, utf8
 from traitlets import DottedObjectName, Instance, Type, default
 
 from .._tz import UTC, utcnow
+from ..iant_debug import iant_debug
 from ..services.kernels.kernelmanager import (
     AsyncMappingKernelManager,
     ServerKernelManager,
@@ -75,6 +76,7 @@ class GatewayMappingKernelManager(AsyncMappingKernelManager):
             The API path (unicode, '/' delimited) for the cwd.
             Will be transformed to an OS path relative to root_dir.
         """
+        iant_debug("GatewayMappingKernelManager.start_kernel")
         self.log.info(f"Request start kernel: kernel_id={kernel_id}, path='{path}'")
 
         if kernel_id is None and path is not None:
@@ -479,6 +481,7 @@ class GatewayKernelManager(ServerKernelManager):
              keyword arguments that are passed down to build the kernel_cmd
              and launching the kernel (e.g. Popen kwargs).
         """
+        iant_debug("GatewayKernelManager.start_kernel")
         kernel_id = kwargs.get("kernel_id")
 
         if kernel_id is None:

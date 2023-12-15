@@ -20,6 +20,7 @@ from jupyter_server.auth.decorator import authorized
 from jupyter_server.utils import url_path_join
 
 from ...base.handlers import APIHandler
+from ...iant_debug import iant_debug
 
 AUTH_RESOURCE = "sessions"
 
@@ -52,6 +53,8 @@ class SessionRootHandler(SessionsAPIHandler):
         if model is None:
             raise web.HTTPError(400, "No JSON data provided")
 
+        iant_debug(f"Create new session {model}")
+
         if "notebook" in model:
             self.log.warning("Sessions API changed, see updated swagger docs")
             model["type"] = "notebook"
@@ -76,6 +79,11 @@ class SessionRootHandler(SessionsAPIHandler):
         kernel = model.get("kernel", {})
         kernel_name = kernel.get("name", None)
         kernel_id = kernel.get("id", None)
+
+        iant_debug(f"  name {name}")
+        iant_debug(f"  kernel {kernel}")
+        iant_debug(f"  kernel_name {kernel_name}")
+        iant_debug(f"  kernel_id {kernel_id}")  # kernel_id is None if want to create new one
 
         if not kernel_id and not kernel_name:
             self.log.debug("No kernel specified, using default kernel")

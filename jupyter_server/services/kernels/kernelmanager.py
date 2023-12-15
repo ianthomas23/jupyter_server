@@ -46,6 +46,8 @@ from jupyter_server._tz import isoformat, utcnow
 from jupyter_server.prometheus.metrics import KERNEL_CURRENTLY_RUNNING_TOTAL
 from jupyter_server.utils import ApiPath, import_item, to_os_path
 
+from ...iant_debug import iant_debug
+
 
 class MappingKernelManager(MultiKernelManager):
     """A KernelManager that handles
@@ -223,12 +225,15 @@ class MappingKernelManager(MultiKernelManager):
             The name identifying which kernel spec to launch. This is ignored if
             an existing kernel is returned, but it may be checked in the future.
         """
+        #iant_debug(f"_async_start_kernel {kernel_id} {path} {kwargs}")
+        iant_debug(f"## _async_start_kernel {kernel_id} {path}")  # kwargs has env[JPY_SESSION_NAME] etc
         if kernel_id is None or kernel_id not in self:
             if path is not None:
                 kwargs["cwd"] = self.cwd_for_path(path, env=kwargs.get("env", {}))
             if kernel_id is not None:
                 assert kernel_id is not None, "Never Fail, but necessary for mypy "
                 kwargs["kernel_id"] = kernel_id
+            iant_debug("  about to self.pinned_superclass._async_start_kernel")
             kernel_id = await self.pinned_superclass._async_start_kernel(self, **kwargs)
             self._kernel_connections[kernel_id] = 0
             task = asyncio.create_task(self._finish_kernel_start(kernel_id))
@@ -844,6 +849,10 @@ class ServerKernelManager(AsyncIOLoopKernelManager):
         success_msg="Kernel {kernel_id} was started.",
     )
     async def start_kernel(self, *args, **kwargs):
+        iant_debug(f"ServerKernelManager.start_kernel calling super {super()}")
+        #import pdb; pdb.set_trace()
+        iant_debug(f"  args {args}")
+        iant_debug(f"  kwargs {kwargs}")
         return await super().start_kernel(*args, **kwargs)
 
     @overrides
