@@ -288,62 +288,63 @@ class SessionManager(LoggingConfigurable):
         self._pending_sessions.update(record)
 
         iant_debug(f"  kernel_manager is {self.kernel_manager}")
-        #for k in self.kernel_manager:
+        # for k in self.kernel_manager:
         #    iant_debug(f"  has {k}")
 
+        #      if match := re.match("(.*):(\d+)$", name):
+        #          shell_port = int(match.group(2))
+
+        #          parent_name = match.group(1)
+        #          model = await self.get_session(name=parent_name)  # maybe should be path?
+        #          iant_debug(f"  matching session model {model}")
+        #          kernel_id = model["kernel"]["id"]
+
+        # kernel_name = f"{kernel_name}:{kernel_id}:{shell_port}"
 
         if match := re.match("(.*):(\d+)$", name):
+            parent_name = match.group(1)  # e.g. "test.ipynb"
             shell_port = int(match.group(2))
-
-            parent_name = match.group(1)
-            model = await self.get_session(name=parent_name)  # maybe should be path?
-            kernel_id = model["kernel"]["id"]
-
-            #kernel_name = f"{kernel_name}:{kernel_id}:{shell_port}"
-
-        if False:
-            name = match.group(1)
-            shell_port = int(match.group(2))
-            iant_debug(f"  SUBSHELL {name} {shell_port}")
+            iant_debug(f"  SUBSHELL {parent_name} {shell_port}")
 
             # Now I want to find the session with this name/path, as I want its kernel...
 
-            ss = await self.list_sessions()
-            for s in ss:
-                iant_debug(f"  list session {s}")
-            model = await self.get_session(name=name)  # maybe should be path?
+            if False:
+                ss = await self.list_sessions()
+                for s in ss:
+                    iant_debug(f"  list session {s}")
+            model = await self.get_session(name=parent_name)  # maybe should be path?
             iant_debug(f"  matching session model {model}")
             kernel_id = model["kernel"]["id"]
 
-            km = self.kernel_manager._kernels[kernel_id]  # Maybe use self.kernel_manager
+            km = self.kernel_manager._kernels[kernel_id]
             iant_debug(f"  kernel server manager {km}")
+            if 1:
+                iant_debug(" # ".join(dir(km)))
 
             # Want to actually get the kernel object (ipykernel.Kernel)
-            #iant_debug(f"  {dir(km)}")
+            # iant_debug(f"  {dir(km)}")
             connection_file = km.connection_file
             iant_debug(f"  connection file {connection_file}")
-            # Read this in as JSON, and change some of it.
-            with open(connection_file, "r") as f:
+            # Can just use km.get_connection_info() here.
+
+            # Read this in as JSON.
+            with open(connection_file) as f:
                 cf = json.load(f)
             iant_debug(f"  old connection info {cf}")
 
-            # Change the shell_port
-            cf["shell_port"] = shell_port
-            # change key based on signature_scheme?  Or keep the same?
-            # might need to change jupyter_session too?
-            iant_debug(f"  new connection info {cf}")
+            if False:
+                # Change the shell_port of connection info.
+                cf["shell_port"] = shell_port
+                # change key based on signature_scheme?  Or keep the same?
+                # might need to change jupyter_session too?
+                iant_debug(f"  new connection info {cf}")
 
-
-            # Now I want to create a new kernel using this connection info
-
-
-       # if match := re.match("(.*):(\d+)$", name):
-        #    import pdb; pdb.set_trace()
+                # Now I want to create a new kernel using this connection info
 
         if kernel_id is not None and kernel_id in self.kernel_manager:
             pass
         else:
-            #import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             kernel_id = await self.start_kernel_for_session(
                 session_id, path, name, type, kernel_name
             )
@@ -405,7 +406,7 @@ class SessionManager(LoggingConfigurable):
 
         kernel_env = self.get_kernel_env(path, name)
         iant_debug(f"  kernel_path {kernel_path}")  # empty
-        iant_debug(f"  kernel_env {kernel_env}")
+        iant_debug(f"  kernel_env {kernel_env}")  # Lots of info here.
         iant_debug(f"  kernel_manager {self.kernel_manager}")
         iant_debug(f"  start_kernel func {self.kernel_manager.start_kernel}")
 

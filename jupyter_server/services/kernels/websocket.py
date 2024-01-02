@@ -9,6 +9,8 @@ from tornado.websocket import WebSocketHandler
 from jupyter_server.base.handlers import JupyterHandler
 from jupyter_server.base.websocket import WebSocketMixin
 
+from ...iant_debug import iant_debug
+
 AUTH_RESOURCE = "kernels"
 
 
@@ -63,6 +65,7 @@ class KernelWebsocketHandler(WebSocketMixin, WebSocketHandler, JupyterHandler): 
 
     async def get(self, kernel_id):
         """Handle a get request for a kernel."""
+        iant_debug(f"KernelWebsocketHandler.get {kernel_id}")
         self.kernel_id = kernel_id
         await self.pre_get()
         await super().get(kernel_id=kernel_id)
@@ -71,6 +74,8 @@ class KernelWebsocketHandler(WebSocketMixin, WebSocketHandler, JupyterHandler): 
         """Open a kernel websocket."""
         # Need to call super here to make sure we
         # begin a ping-pong loop with the client.
+        # import pdb; pdb.set_trace()
+        iant_debug(f"KernelWebsocketHandler.open {kernel_id}")
         super().open()
         # Wait for the kernel to emit an idle status.
         self.log.info(f"Connecting to kernel {self.kernel_id}.")

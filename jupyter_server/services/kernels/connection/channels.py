@@ -24,6 +24,7 @@ from jupyter_core.utils import ensure_async
 
 from jupyter_server.transutils import _i18n
 
+from ....iant_debug import iant_debug
 from ..websocket import KernelWebsocketHandler
 from .abc import KernelWebsocketConnectionABC
 from .base import (
@@ -148,6 +149,7 @@ class ZMQChannelsWebsocketConnection(BaseKernelWebsocketConnection):
 
     def create_stream(self):
         """Create a stream."""
+        iant_debug("ZMQChannelsWebsocketConnection.create_stream")
         identity = self.session.bsession
         for channel in ("iopub", "shell", "control", "stdin"):
             meth = getattr(self.kernel_manager, "connect_" + channel)
@@ -279,6 +281,7 @@ class ZMQChannelsWebsocketConnection(BaseKernelWebsocketConnection):
         where the socket on our side has not been cleaned up yet.
         """
         self.session_key = f"{self.kernel_id}:{self.session.session}"
+        iant_debug(f"ZMQChannelsWebsocketConnection._register_session {self.session_key}")
         stale_handler = self._open_sessions.get(self.session_key)
         if stale_handler:
             self.log.warning("Replacing stale connection: %s", self.session_key)
@@ -292,6 +295,7 @@ class ZMQChannelsWebsocketConnection(BaseKernelWebsocketConnection):
 
     async def prepare(self):
         """Prepare a kernel connection."""
+        iant_debug("ZMQChannelsWebsocketConnection.prepare")
         # check session collision:
         await self._register_session()
         # then request kernel info, waiting up to a certain time before giving up.
@@ -333,6 +337,7 @@ class ZMQChannelsWebsocketConnection(BaseKernelWebsocketConnection):
 
     def connect(self):
         """Handle a connection."""
+        iant_debug("ZMQChannelsWebsocketConnection.connect")
         self.multi_kernel_manager.notify_connect(self.kernel_id)
 
         # on new connections, flush the message buffer
@@ -398,6 +403,7 @@ class ZMQChannelsWebsocketConnection(BaseKernelWebsocketConnection):
     def disconnect(self):
         """Handle a disconnect."""
         self.log.debug("Websocket closed %s", self.session_key)
+        iant_debug(f"ZMQChannelsWebsocketConnection.disconnect {self.session_id}")
         # unregister myself as an open session (only if it's really me)
         if self._open_sessions.get(self.session_key) is self.websocket_handler:
             self._open_sessions.pop(self.session_key)
