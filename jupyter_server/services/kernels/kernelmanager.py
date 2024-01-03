@@ -576,6 +576,8 @@ class MappingKernelManager(MultiKernelManager):
             else:
                 self.log.debug("activity on %s: %s", kernel_id, msg_type)
 
+        iant_debug(f"ACTIVITY_STREAM {kernel._activity_stream}")
+        # import pdb; pdb.set_trace()
         kernel._activity_stream.on_recv(record_activity)
 
     def stop_watching_activity(self, kernel_id):

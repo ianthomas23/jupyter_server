@@ -341,6 +341,9 @@ class SessionManager(LoggingConfigurable):
 
                 # Now I want to create a new kernel using this connection info
 
+            kernel_id = None  # force new kernel to be created...
+            # kernel_name = f"{kernel_name}:{shell_port}"
+
         if kernel_id is not None and kernel_id in self.kernel_manager:
             pass
         else:
@@ -354,6 +357,7 @@ class SessionManager(LoggingConfigurable):
             session_id, path=path, name=name, type=type, kernel_id=kernel_id
         )
         self._pending_sessions.remove(record)
+        iant_debug(f"create_session returns {record}")
         return cast(Dict[str, Any], result)
 
     def get_kernel_env(
@@ -409,6 +413,20 @@ class SessionManager(LoggingConfigurable):
         iant_debug(f"  kernel_env {kernel_env}")  # Lots of info here.
         iant_debug(f"  kernel_manager {self.kernel_manager}")
         iant_debug(f"  start_kernel func {self.kernel_manager.start_kernel}")
+
+        # Botch the kernel env with required shell_port.
+        # iant_debug(f"CHECK A {name}")
+        if match := re.match("(.*):(\d+)$", name):  # Could use JPY_SESSION_NAME instead of name?
+            shell_port = match.group(2)
+            iant_debug(f"CHECK B {shell_port}")
+            kernel_env["IANT_BOTCH_SHELL_PORT"] = str(shell_port)
+
+            parent_name = match.group(1)
+            parent_model = await self.get_session(name=parent_name)
+            parent_kernel_id = parent_model["kernel"]["id"]
+            parent_km = self.kernel_manager._kernels[parent_kernel_id]
+            parent_connection_info = parent_km.get_connection_info()
+            kernel_env["IANT_BOTCH_CONNECTION_INFO"] = parent_connection_info
 
         ks = self.kernel_manager.list_kernels()
         for k in ks:
