@@ -2,8 +2,10 @@
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+import json
 import os
 import pathlib
+import re
 import uuid
 from typing import Any, Dict, List, NewType, Optional, Union, cast
 
@@ -279,6 +281,21 @@ class SessionManager(LoggingConfigurable):
         session_id = self.new_session_id()
         record = KernelSessionRecord(session_id=session_id)
         self._pending_sessions.update(record)
+
+        if match := re.match("(.*):(\d+)$", name):
+            if True:
+                # This just for debug purposes.
+                parent_name = match.group(1)  # e.g. "test.ipynb"
+                shell_port = int(match.group(2))
+
+                # Now I want to find the session with this name/path, as I want its kernel...
+                parent_model = await self.get_session(name=parent_name)  # maybe should be path?
+                parent_kernel_id = parent_model["kernel"]["id"]
+                parent_km = self.kernel_manager._kernels[parent_kernel_id]
+                connection_info = parent_km.get_connection_info()
+
+            kernel_id = None  # Force new kernel to be created rather than reusing parent kernel
+
         if kernel_id is not None and kernel_id in self.kernel_manager:
             pass
         else:
@@ -340,6 +357,19 @@ class SessionManager(LoggingConfigurable):
         kernel_path = await ensure_async(self.contents_manager.get_kernel_path(path=path))
 
         kernel_env = self.get_kernel_env(path, name)
+
+        # Botch the kernel env with required shell_port.
+        if match := re.match("(.*):(\d+)$", name):  # Could use JPY_SESSION_NAME instead of name?
+            shell_port = match.group(2)
+            kernel_env["IANT_BOTCH_SHELL_PORT"] = str(shell_port)
+
+            parent_name = match.group(1)
+            parent_model = await self.get_session(name=parent_name)
+            parent_kernel_id = parent_model["kernel"]["id"]
+            parent_km = self.kernel_manager._kernels[parent_kernel_id]
+            parent_connection_info = parent_km.get_connection_info()
+            kernel_env["IANT_BOTCH_CONNECTION_INFO"] = parent_connection_info
+
         kernel_id = await self.kernel_manager.start_kernel(
             path=kernel_path,
             kernel_name=kernel_name,
