@@ -2,8 +2,10 @@
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+import json
 import os
 import pathlib
+import re
 import uuid
 from typing import Any, Dict, List, NewType, Optional, Union, cast
 
@@ -18,6 +20,7 @@ except ImportError:
 
 from dataclasses import dataclass, fields
 
+from jupyter_client.connect import KernelConnectionInfo
 from jupyter_core.utils import ensure_async
 from tornado import web
 from traitlets import Instance, TraitError, Unicode, validate
@@ -279,11 +282,35 @@ class SessionManager(LoggingConfigurable):
         session_id = self.new_session_id()
         record = KernelSessionRecord(session_id=session_id)
         self._pending_sessions.update(record)
+
+        connection_info = None
+
+        if match := re.match("(.*):(\d+)$", name):
+            parent_name = match.group(1)  # e.g. "test.ipynb"
+            shell_port = int(match.group(2))
+
+            # Obtain connection info of parent (main kernel thread).
+            parent_model = await self.get_session(name=parent_name)  # maybe should be path?
+            parent_kernel_id = parent_model["kernel"]["id"]
+            parent_km = self.kernel_manager._kernels[parent_kernel_id]
+            connection_info = parent_km.get_connection_info()
+            connection_info["kernel_name"] = kernel_name
+
+            # Change the shell_port of connection info.
+            connection_info["shell_port"] = shell_port
+
+            kernel_id = None  # Force new kernel to be created
+
         if kernel_id is not None and kernel_id in self.kernel_manager:
             pass
         else:
             kernel_id = await self.start_kernel_for_session(
-                session_id, path, name, type, kernel_name
+                session_id,
+                path,
+                name,
+                type,
+                kernel_name,
+                connection_info,
             )
         record.kernel_id = kernel_id
         self._pending_sessions.update(record)
@@ -319,6 +346,7 @@ class SessionManager(LoggingConfigurable):
         name: Optional[ModelName],
         type: Optional[str],
         kernel_name: Optional[KernelName],
+        connection_info: Optional[KernelConnectionInfo],
     ) -> str:
         """Start a new kernel for a given session.
 
@@ -344,6 +372,7 @@ class SessionManager(LoggingConfigurable):
             path=kernel_path,
             kernel_name=kernel_name,
             env=kernel_env,
+            connection_info=connection_info,
         )
         return cast(str, kernel_id)
 
